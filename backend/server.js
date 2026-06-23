@@ -17,6 +17,9 @@ const app = express();
 app.use(cors());
 app.use(express.json());
 
+// Handle OPTIONS preflight requests explicitly for all routes (important for Vercel)
+app.options('*', cors());
+
 // Basic welcome route
 app.get('/', (req, res) => {
   res.send('API is running...');
