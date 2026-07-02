@@ -61,6 +61,19 @@ app.get('/api/db-debug', async (req, res) => {
   }
 });
 
+// Database connection middleware for Serverless environment
+app.use(async (req, res, next) => {
+  try {
+    await connectDB();
+    next();
+  } catch (error) {
+    res.status(500).json({
+      message: 'Failed to establish database connection.',
+      error: error.message
+    });
+  }
+});
+
 // Register API Routes
 app.use('/api/users', userRoutes);
 app.use('/api/products', productRoutes);
