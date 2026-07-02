@@ -1,6 +1,7 @@
 import express from 'express';
 import dotenv from 'dotenv';
 import cors from 'cors';
+import mongoose from 'mongoose';
 import connectDB from './config/db.js';
 import userRoutes from './routes/userRoutes.js';
 import productRoutes from './routes/productRoutes.js';
@@ -25,6 +26,30 @@ app.get('/', (req, res) => {
   res.send('API is running...');
 });
 
+// DB Debug route to check environment variables on Vercel securely
+app.get('/api/db-debug', (req, res) => {
+  const dbUri = process.env.MONGODB_URI || process.env.MONGO_URI || process.env.MONGO_URL || process.env.MONGODB_URL;
+  if (!dbUri) {
+    return res.json({ error: 'No MongoDB URI found in environment variables.' });
+  }
+  
+  // Parse URI securely (mask password)
+  try {
+    const maskedUri = dbUri.replace(/:([^@]+)@/, ':****@');
+    const isConnected = mongoose.connection.readyState;
+    const states = { 0: 'disconnected', 1: 'connected', 2: 'connecting', 3: 'disconnecting' };
+    
+    res.json({
+      uriLength: dbUri.length,
+      maskedUri: maskedUri,
+      readyState: isConnected,
+      connectionStatus: states[isConnected] || 'unknown',
+      hasSpecialChars: /[^a-zA-Z0-9-._~:/?#\[\]@!$&'()*+,;=]/.test(dbUri)
+    });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
 
 // Register API Routes
 app.use('/api/users', userRoutes);
