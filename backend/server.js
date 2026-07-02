@@ -13,24 +13,12 @@ connectDB();
 
 const app = express();
 
-// CORS config - allow frontend Vercel domain
-const corsOptions = {
-  origin: [
-    'https://circuit-bay-6nvq.vercel.app',
-    'http://localhost:5173',
-    'http://localhost:3000',
-  ],
-  credentials: true,
-  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
-  allowedHeaders: ['Content-Type', 'Authorization'],
-};
-
 // Standard Middlewares
-app.use(cors(corsOptions));
+app.use(cors());
 app.use(express.json());
 
 // Handle OPTIONS preflight requests explicitly for all routes (important for Vercel)
-app.options('*', cors(corsOptions));
+app.options('*', cors());
 
 // Basic welcome route
 app.get('/', (req, res) => {
