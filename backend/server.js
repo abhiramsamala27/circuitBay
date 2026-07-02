@@ -27,27 +27,37 @@ app.get('/', (req, res) => {
 });
 
 // DB Debug route to check environment variables on Vercel securely
-app.get('/api/db-debug', (req, res) => {
+app.get('/api/db-debug', async (req, res) => {
   const dbUri = process.env.MONGODB_URI || process.env.MONGO_URI || process.env.MONGO_URL || process.env.MONGODB_URL;
   if (!dbUri) {
     return res.json({ error: 'No MongoDB URI found in environment variables.' });
   }
   
-  // Parse URI securely (mask password)
   try {
-    const maskedUri = dbUri.replace(/:([^@]+)@/, ':****@');
-    const isConnected = mongoose.connection.readyState;
-    const states = { 0: 'disconnected', 1: 'connected', 2: 'connecting', 3: 'disconnecting' };
+    // Correctly mask only the password between : and @ after the protocol
+    const maskedUri = dbUri.replace(/mongodb\+srv:\/\/([^:]+):([^@]+)@/, 'mongodb+srv://$1:****@');
+    
+    // Attempt a fresh connection to capture the exact error
+    const tempConn = await mongoose.createConnection(dbUri, {
+      serverSelectionTimeoutMS: 5000 // fail fast in 5 seconds
+    }).asPromise();
+    
+    await tempConn.close();
     
     res.json({
+      success: true,
       uriLength: dbUri.length,
       maskedUri: maskedUri,
-      readyState: isConnected,
-      connectionStatus: states[isConnected] || 'unknown',
-      hasSpecialChars: /[^a-zA-Z0-9-._~:/?#\[\]@!$&'()*+,;=]/.test(dbUri)
+      status: 'Successfully connected and authenticated!'
     });
   } catch (err) {
-    res.status(500).json({ error: err.message });
+    res.json({
+      success: false,
+      uriLength: dbUri.length,
+      errorName: err.name,
+      errorMessage: err.message,
+      errorStack: err.stack
+    });
   }
 });
 
